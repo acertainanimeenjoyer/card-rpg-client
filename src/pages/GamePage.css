@@ -1,0 +1,40 @@
+.card-hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 20px;
+  gap: 16px;
+  background-color: #f9f9f9;
+  border-top: 2px solid #ddd;
+  border-bottom: 2px solid #ddd;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  min-height: 160px;
+}
+
+.card-slot {
+  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.card-slot:hover {
+  transform: scale(1.05);
+  border-color: gold;
+}
+
+.card-slot.selected {
+  border-color: #1fa2ff;
+  background-color: rgba(31, 162, 255, 0.1);
+}
+
+hp-flash {
+  animation: flash-hit 0.4s;
+}
+
+@keyframes flash-hit {
+  0%   { background-color: rgba(255,0,0,0.4); }
+  100% { background-color: transparent; }
+}

@@ -1,0 +1,61 @@
+.card {
+  border-radius: 10px;
+  padding: 10px;
+  width: 120px;
+  text-align: center;
+  margin: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.card-type {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 4px auto;
+  display: inline-block;
+}
+
+.card.attack .card-type {
+  background-color: crimson;
+}
+
+.card.buff .card-type {
+  background-color: royalblue;
+}
+
+.card-potency {
+  font-size: 0.85rem;
+}
+
+.card-scaling {
+  font-size: 0.8rem;
+  color: #333;
+}
+.card:hover {
+  box-shadow: 0 0 12px rgba(0,0,0,0.25);
+}
+.card-animate {
+  animation: pulseCard 0.5s ease;
+}
+
+@keyframes pulseCard {
+  0% { transform: scale(1); box-shadow: 0 0 0px rgba(255,255,255,0.2); }
+  50% { transform: scale(1.1); box-shadow: 0 0 12px rgba(255,255,255,0.6); }
+  100% { transform: scale(1); box-shadow: 0 0 0px rgba(255,255,255,0.2); }
+}
+
+

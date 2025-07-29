@@ -1,0 +1,56 @@
+/* client/src/pages/MainMenu.css */
+.menu-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #121212;
+  color: #eee;
+}
+.menu-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+}
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.menu-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #28a745;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.2rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.menu-button:hover {
+  background: #218838;
+}
+
+/* Profile section */
+.menu-profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #4fb0c6;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-right: 10px;
+}
+.username {
+  color: #fff;
+  font-size: 1.2rem;
+}
+

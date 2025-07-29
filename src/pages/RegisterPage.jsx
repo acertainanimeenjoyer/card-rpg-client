@@ -1,31 +1,56 @@
 import React, { useState } from 'react';
-import { registerUser } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
+import './AuthPage.css';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     try {
-      const { token } = await registerUser(username, password);
-      localStorage.setItem('token', token);
-      setMsg('✅ Registered successfully! You may now play.');
-    } catch (err) {
-      setMsg('❌ Registration failed.');
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.message || 'Registration failed.');
+        return;
+      }
+      // On success, redirect to login
+      localStorage.setItem('username', username);
+      navigate('/');
+    } catch {
+      setErrorMsg('Network error, please try again.');
     }
   };
 
   return (
-    <div className="auth-container">
-      <h2>Register</h2>
-      <form onSubmit={handleRegister}>
-        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
+    <div className="auth-page">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <h2>Register</h2>
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
         <button type="submit">Register</button>
+        {errorMsg && <p className="error">{errorMsg}</p>}
       </form>
-      <p>{msg}</p>
     </div>
   );
 }

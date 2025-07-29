@@ -1,21 +1,27 @@
+// client/src/App.js
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainMenu     from './pages/MainMenu';
+import LoginPage    from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import GamePage from './pages/GamePage';
+import GamePage     from './pages/GamePage';
+import EditorPage   from './pages/EditorPage';
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
+        {/* Landing menu at "/" */}
+        <Route path="/"        element={<MainMenu />} />
+
+        {/* Auth */}
+        <Route path="/login"   element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/game" element={<GamePage />} />
-        {/* Add other routes here as needed */}
+
+        {/* Core app */}
+        <Route path="/game"    element={<GamePage />} />
+        <Route path="/editor"  element={<EditorPage />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;

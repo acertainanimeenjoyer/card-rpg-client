@@ -1,6 +1,7 @@
 import React from 'react';
 
 export default function EnemyPanel({ enemy, wasHit }) {
+  if (!enemy) return null;
   return (
     <div className={`panel ${wasHit ? 'hp-flash' : ''}`}>
       <h3>🧟 {enemy.name}</h3>

@@ -38,3 +38,47 @@ hp-flash {
   0%   { background-color: rgba(255,0,0,0.4); }
   100% { background-color: transparent; }
 }
+
+.room {
+  text-align: center;
+  padding: 20px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.loot-room ul,
+.merchant-room ul {
+  list-style: none;
+  padding: 0;
+}
+.loot-room li,
+.merchant-room li {
+  margin: 8px 0;
+}
+
+/* client/src/pages/GamePage.css */
+
+.game-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #121212;
+  color: #eee;
+  min-height: 100vh;       /* ensures full viewport height */
+  width: 100vw;            /* full width */
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;      /* prevent horizontal scroll */
+}
+
+/* If your card-hand container has a white bg, remove it or override: */
+.card-hand {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 20px 0;
+  display: flex;
+  gap: 16px;
+}
+
+

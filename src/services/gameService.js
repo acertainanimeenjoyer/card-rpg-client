@@ -1,10 +1,23 @@
-import API from './api';
+// client/src/services/gameService.js
 
-export const playTurn = async (selectedCards, playerStats, enemyId) => {
-  const res = await API.post('/game/turn', {
-    selectedCards,
-    playerStats,
-    enemyId
+/**
+ * Play a turn by sending:
+ *   - selectedCards: Array
+ *   - playerStats:    Object
+ *   - enemy:          Object  (full enemy state)
+ */
+export async function playTurnAPI(payload) {
+  const res = await fetch('/api/game/play', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
   });
-  return res.data;
-};
+
+  const response = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(response.error || response.message || `Play turn failed (${res.status})`);
+  }
+  return response;
+}

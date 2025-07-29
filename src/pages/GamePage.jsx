@@ -1,5 +1,8 @@
+// client/src/pages/GamePage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { playTurn as playTurnAPI } from '../services/gameService';
+import { getDefaultCampaign } from '../services/campaignService';
 import CardDisplay from '../components/CardDisplay';
 import PlayerPanel from '../components/PlayerPanel';
 import EnemyPanel from '../components/EnemyPanel';
@@ -17,12 +20,14 @@ function shuffle(array) {
 }
 
 export default function GamePage() {
+  // ——— Player & Game State ———
   const [playerName, setPlayerName] = useState(() => {
     return localStorage.getItem("playerName") || prompt("Enter your hero's name:");
   });
   useEffect(() => {
     localStorage.setItem("playerName", playerName);
   }, [playerName]);
+
   const [playerStats, setPlayerStats] = useState({
     attackPower: 10,
     physicalPower: 5,
@@ -33,29 +38,31 @@ export default function GamePage() {
     speed: 3,
     currentHp: 300,
   });
-
   const [enemy, setEnemy] = useState({
-    _id: "1234567890abcdef", // replace with real MongoDB ID
+    _id: "1234567890abcdef",
     name: "Shadow Fiend",
     hp: 300,
     imageUrl: "https://via.placeholder.com/150",
-    stats: {
-      physicalPower: 4,
-      supernaturalPower: 6,
-      speed: 2
-    }
+    stats: { physicalPower: 4, supernaturalPower: 6, speed: 2 }
   });
-  const [discardPile, setDiscardPile] = useState([]);
+
   const [deck, setDeck] = useState([]);
   const [hand, setHand] = useState([]);
+  const [discardPile, setDiscardPile] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
+
+  // ——— UI & Control State ———
   const [initiative, setInitiative] = useState('');
   const [gameOver, setGameOver] = useState(false);
+  const [playLocked, setPlayLocked] = useState(false);
   const [enemyWasHit, setEnemyWasHit] = useState(false);
   const [playerWasHit, setPlayerWasHit] = useState(false);
-  const [playLocked, setPlayLocked] = useState(false);
 
-  // 🃏 Initial deck setup
+  // ——— Campaign State ———
+  const [campaign, setCampaign] = useState([]);
+  const [roomIndex, setRoomIndex] = useState(0);
+
+  // ——— Initialize Deck ———
   useEffect(() => {
     const initialDeck = [
       { name: "Slash", potency: 20, type: "Attack", scaling: "Physical" },
@@ -66,25 +73,54 @@ export default function GamePage() {
       { name: "Lightning Bolt", potency: 30, type: "Attack", scaling: "Supernatural" },
       { name: "Punch", potency: 10, type: "Attack", scaling: "Physical" }
     ];
-
     const shuffled = shuffle(initialDeck);
     setHand(shuffled.slice(0, 3));
     setDeck(shuffled.slice(3));
   }, []);
 
-  // 🎴 Play Turn
+  // ——— Fetch Default Campaign ———
+  useEffect(() => {
+    (async () => {
+      try {
+        const { campaign: rooms } = await getDefaultCampaign(8);
+        setCampaign(rooms);
+      } catch (err) {
+        console.error('Failed to load campaign:', err);
+      }
+    })();
+  }, []);
+
+  // ——— Campaign Navigation ———
+  const advanceRoom = () => {
+    if (roomIndex < campaign.length - 1) {
+      setRoomIndex(roomIndex + 1);
+    } else {
+      alert("🏁 You've completed the default campaign!");
+    }
+  };
+
+  // ——— Core Turn Logic ———
   const handlePlayTurn = async () => {
+    if (gameOver || playLocked || (selectedCards.length === 0 && !selectedCards.some(c => c.name === 'Guard'))) {
+      return;
+    }
+    setPlayLocked(true);
+
     try {
       const result = await playTurnAPI(selectedCards, playerStats, enemy._id);
       setInitiative(result.result.initiative);
+
       const enemyHP = result.result.enemy.hpRemaining;
       const playerHP = result.result.player.hpRemaining;
+      const damageDealt = result.result.enemy.damageTaken;
+      const damageReceived = result.result.player.damageTaken;
 
       alert(
-        `You dealt ${result.result.enemy.damageTaken} damage!\nEnemy HP: ${enemyHP}\n\n` +
-        `Enemy hit back for ${result.result.player.damageTaken}!\nYour HP: ${playerHP}`
+        `You dealt ${damageDealt} damage!\nEnemy HP: ${enemyHP}\n\n` +
+        `Enemy hit back for ${damageReceived}!\nYour HP: ${playerHP}`
       );
 
+      // Flash hit animations
       setEnemyWasHit(true);
       setPlayerWasHit(true);
       setTimeout(() => {
@@ -92,137 +128,133 @@ export default function GamePage() {
         setPlayerWasHit(false);
       }, 400);
 
-
-      setEnemy(prev => ({
-        ...prev,
-        hp: enemyHP
-      }));
-
+      // Update HP state
+      setEnemy(prev => ({ ...prev, hp: enemyHP }));
       setPlayerStats(prev => ({
         ...prev,
         currentHp: Math.min(playerHP, prev.vitality * 100)
       }));
 
+      // Check for victory/defeat
       if (enemyHP <= 0) {
         setGameOver(true);
         alert("🎉 Victory!");
+        advanceRoom();                // ← Next room on victory
         return;
       }
-
       if (playerHP <= 0) {
         setGameOver(true);
         alert("💀 Defeat");
         return;
       }
 
-      if (gameOver || selectedCards.length === 0 || playLocked) return;
-        setPlayLocked(true);
+      // Discard used cards
+      setDiscardPile(prev => [...prev, ...selectedCards]);
 
-
-
-      // 🃏 Draw next hand
+      // Draw next hand (reshuffle if needed)
       let nextDeck = deck;
       let nextHand = [];
-
       if (deck.length < 3) {
         const reshuffled = shuffle([...deck, ...discardPile]);
         nextHand = reshuffled.slice(0, 3);
         nextDeck = reshuffled.slice(3);
-        setDiscardPile([]); // reset discard pile
+        setDiscardPile([]);
       } else {
         nextHand = deck.slice(0, 3);
         nextDeck = deck.slice(3);
       }
-
       setHand(nextHand);
       setDeck(nextDeck);
-
       setSelectedCards([]);
-      setDiscardPile(prev => [...prev, ...selectedCards]);
-      setPlayLocked(false);
-
     } catch (err) {
-      alert("⚠️ Turn resolution failed. Check connection or backend logic.");
       console.error(err);
+      alert("⚠️ Turn resolution failed.");
+    } finally {
+      setPlayLocked(false);
     }
   };
 
-  // 💾 Save Game
+  // ——— Defend & Skip Actions ———
+  const handleDefend = async () => {
+    setSelectedCards([{ name: 'Guard', type: 'Buff', potency: 0 }]);
+    await handlePlayTurn();
+  };
+  const handleSkipTurn = async () => {
+    setSelectedCards([]);
+    await handlePlayTurn();
+  };
+
+  // ——— Save & Load ———
   const handleSaveGame = async () => {
     try {
-      const response = await fetch('/api/game/save', {
+      const res = await fetch('/api/game/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          playerStats,
-          enemy,
-          deck,
-          hand,
-          selectedCards
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerStats, enemy, deck, hand, selectedCards, discardPile })
       });
-
-      const data = await response.json();
+      const data = await res.json();
       alert(data.message || "Game saved.");
-    } catch (err) {
-      alert("Save failed.");
-      console.error(err);
+    } catch {
+      alert("⚠️ Save failed.");
     }
   };
   const handleLoadGame = async () => {
     try {
-        const response = await fetch('/api/game/load');
-        const data = await response.json();
-
-        setPlayerStats(data.playerStats);
-        setEnemy(data.enemy);
-        setDeck(data.deck);
-        setHand(data.hand);
-        setSelectedCards(data.selectedCards || []);
-        alert("Game loaded!");
-    }   catch (err) {
-        alert("Failed to load game.");
-        console.error(err);
+      const res = await fetch('/api/game/load');
+      const data = await res.json();
+      setPlayerStats(data.playerStats);
+      setEnemy(data.enemy);
+      setDeck(data.deck);
+      setHand(data.hand);
+      setDiscardPile(data.discardPile || []);
+      setSelectedCards(data.selectedCards || []);
+      setGameOver(false);
+      alert("Game loaded!");
+    } catch {
+      alert("⚠️ Load failed.");
     }
   };
-  const handleDefend = async () => {
-    setSelectedCards([{ name: 'Guard', type: 'Buff', potency: 0 }]);
-    await handlePlayTurn(); // reuse play logic!
-  };
 
-  const handleSkipTurn = async () => {
-    setSelectedCards([]);
-    await handlePlayTurn(); // send empty hand
-  };
+  // ——— Render ———
+  const currentRoom = campaign[roomIndex] || {};
+  const { type: roomType = 'loading', boss } = currentRoom;
 
   return (
     <div className="game-page">
+      {/* Room Header */}
+      <h2 style={{ textAlign: 'center' }}>
+        Room {roomIndex + 1}/{campaign.length}: {boss ? 'Boss' : roomType.toUpperCase()}
+      </h2>
+
+      {/* Panels */}
       <EnemyPanel enemy={enemy} wasHit={enemyWasHit} />
       <PlayerPanel stats={playerStats} wasHit={playerWasHit} />
-      <h3>{playerName}'s Stats</h3>
-      <h3 style={{ textAlign: "center" }}>
-        Initiative: <span style={{ color: initiative === 'player' ? 'green' : 'red' }}>
-            {initiative === 'player' ? 'You act first!' : 'Enemy acts first!'}
+
+      {/* Initiative */}
+      <h3 style={{ textAlign: 'center' }}>
+        Initiative:{' '}
+        <span style={{ color: initiative === 'player' ? 'green' : 'red' }}>
+          {initiative === 'player' ? 'You act first!' : 'Enemy acts first!'}
         </span>
       </h3>
-      <div style={{ textAlign: "center", marginBottom: "10px" }}>
+
+      {/* Deck / Discard Info */}
+      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         🃏 Deck: {deck.length} &nbsp;&nbsp; 🗑️ Discard: {discardPile.length}
       </div>
 
+      {/* Card Hand */}
       <div className="card-hand">
-        {hand.map((card, i) => {
+        {hand.map((card, idx) => {
           const isSelected = selectedCards.includes(card);
           return (
             <div
-              key={i}
-              className={`card-slot ${isSelected ? "selected" : ""}`}
+              key={idx}
+              className={`card-slot ${isSelected ? 'selected' : ''}`}
+              title={`Type: ${card.type} | Potency: ${card.potency} ${card.scaling || ''}`}
               onClick={() => {
                 setSelectedCards(prev =>
-                  isSelected
-                    ? prev.filter(c => c !== card)
-                    : [...prev, card]
+                  isSelected ? prev.filter(c => c !== card) : [...prev, card]
                 );
               }}
             >
@@ -231,18 +263,26 @@ export default function GamePage() {
           );
         })}
       </div>
-      <CardEditor onAddCard={(newCard) => setDeck(prev => [...prev, newCard])} />
+
+      {/* Card Editor */}
+      <CardEditor onAddCard={newCard => setDeck(prev => [...prev, newCard])} />
+
+      {/* Action Buttons */}
       <ActionButtons
         onPlayTurn={handlePlayTurn}
         onDefend={handleDefend}
         onSkipTurn={handleSkipTurn}
-        disabled={selectedCards.length === 0 || gameOver || playLocked}
+        disabled={
+          gameOver ||
+          playLocked ||
+          (selectedCards.length === 0 && !selectedCards.some(c => c.name === 'Guard'))
+        }
       />
+
+      {/* Save / Load / Restart */}
       <button onClick={handleSaveGame}>💾 Save Game</button>
       <button onClick={handleLoadGame}>📥 Load Game</button>
-      {gameOver && (
-        <button onClick={() => window.location.reload()}>🔄 Restart Game</button>
-      )}
+      {gameOver && <button onClick={() => window.location.reload()}>🔄 Restart Game</button>}
     </div>
   );
 }
